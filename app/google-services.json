@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "603683223605",
+    "firebase_url": "https://ubiq-d0466.firebaseio.com",
+    "project_id": "ubiq-d0466",
+    "storage_bucket": "ubiq-d0466.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603683223605:android:3a9579f3e960f40d5a197c",
+        "android_client_info": {
+          "package_name": "com.example.ubiq"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "603683223605-lmriardf9n7dqc0s39tn8lucrbimtrt2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ubiq",
+            "certificate_hash": "5c9622ace6a7c267ed2d3ca9686696224731b1f7"
+          }
+        },
+        {
+          "client_id": "603683223605-bcnpichbk66f3moqd103vgaf7qie9hd3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5QeyqE49zW9M3-9rRcCxWOcOBga-0A2k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "603683223605-bcnpichbk66f3moqd103vgaf7qie9hd3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

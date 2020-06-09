@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/user_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="25dp"
+            android:background="#EEEEEE" />
+
+        <TextView
+            android:id="@+id/user_count_text"
+            android:layout_centerInParent="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#41A4FF"
+            android:textSize="15sp"/>
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/empty_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="100dp"
+        android:visibility="gone"
+        android:layout_below="@+id/user_count">
+
+    <TextView
+        android:id="@+id/empty_text1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="This Queue is Empty"
+        android:textSize="20sp"/>
+
+    <TextView
+        android:id="@+id/empty_text2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="Add some tracks!"
+        android:layout_below="@id/empty_text1"
+        android:textSize="20sp"/>
+
+    </RelativeLayout>
+
+    <ListView
+        android:id="@+id/queueListView"
+        android:layout_width="413dp"
+        android:layout_height="match_parent"
+        android:listSelector="@android:color/transparent"
+        android:layout_below="@+id/user_count"/>
+
+</RelativeLayout>
