@@ -40,6 +40,7 @@ public class ArtistFragment extends Fragment {
     private ListView albumListView;
     private ListView topTracksListView;
     String accessToken;
+    int allez;
 
     public ArtistFragment(Artist artist, String accessToken){
         this.artist = artist;
