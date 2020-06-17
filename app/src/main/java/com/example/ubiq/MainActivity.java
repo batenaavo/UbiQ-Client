@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,9 +23,12 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.ServerError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.StringRequest;
@@ -32,6 +36,7 @@ import com.android.volley.toolbox.Volley;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import com.microsoft.signalr.Action;
+import com.microsoft.signalr.Action1;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import com.microsoft.signalr.HubConnectionState;
@@ -50,7 +55,6 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.ListIterator;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
@@ -62,10 +66,8 @@ public class MainActivity extends AppCompatActivity {
     private String userType;
     private String apiToken;
     private SpotifyAppRemote mSpotifyAppRemote;
-    private ArrayList<Track> queueTracks;
     private ArrayList<SearchResult> lastSearchResults;
     private ArrayList<String> connectedUsers;
-    private Track currentTrack;
     private ContentLoadingProgressBar progressBar;
     private ValueAnimator progressBarAnimator;
     private SettingsFragment settingsFragment;
@@ -99,11 +101,9 @@ public class MainActivity extends AppCompatActivity {
         preferences.setSpotifyClientId();
         preferences.setSpotifyRedirectUri();
         preferences.setRequestCode();
-        this.queueTracks = new ArrayList<>();
         this.lastSearchResults = new ArrayList<>();
         this.connectedUsers = new ArrayList<>();
         this.connectedUsersCount = 0;
-        this.currentTrack = null;
         this.pausePlayButton = (ToggleButton) findViewById(R.id.pause_play_button);
         this.skipButton = (ImageButton) findViewById(R.id.skip_button);
         this.controllerArtist = (TextView) findViewById(R.id.controller_artist_name);
@@ -154,11 +154,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        hubConnection.on("TrackLoaded", (position) -> {
-            queueFragment.currentTrack = position;
-            if(selectedFragment == queueFragment)
-                queueFragment.resetAdapter();
-            }, Integer.class);
+        hubConnection.on("TrackLoaded", new Action1<Integer>() {
+            @Override
+            public void invoke(Integer position) {
+                System.out.println("current position: " + position);
+                sendGetCurrentTrackRequest(position);
+            }
+        }, Integer.class);
 
         setSupportActionBar(toolbar);
         setTitle(getQueueName());
@@ -311,7 +313,7 @@ public class MainActivity extends AppCompatActivity {
         usersFragment.cancelRequests();
     }
 
-    public void setPlaybackVisible(Boolean visible){
+    public void setPlaybackVisibility(Boolean visible){
         if(visible && !isPlayVisible && userType.equals("host")){
             findViewById(R.id.playback_controller).setVisibility(View.VISIBLE);
             isPlayVisible = true;
@@ -461,9 +463,11 @@ public class MainActivity extends AppCompatActivity {
     public void loadTrack(int position){
         Track track = queueFragment.queueTracks.get(position);
         queueFragment.currentTrack = position;
+
         if(selectedFragment == queueFragment) {
             queueFragment.resetAdapter();
         }
+
         if(userType.equals("host")) {
             controllerArtist.setText(artistNamesFromList(track.getArtists()));
             controllerTrack.setText(track.getName());
@@ -487,7 +491,7 @@ public class MainActivity extends AppCompatActivity {
             progressBarAnimator.start();
             progressBarAnimator.pause();
             if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED) {
-                hubConnection.send("LoadTrack", position);
+                hubConnection.send("LoadTrack", queueName, position);
             }
         }
         else if(userType.equals("guest")){
@@ -496,6 +500,7 @@ public class MainActivity extends AppCompatActivity {
             viewerArtist.setSelected(true);
             viewerTrack.setSelected(true);
         }
+        setPlaybackVisibility(true);
     }
 
     public void playTrack(int position){
@@ -516,23 +521,6 @@ public class MainActivity extends AppCompatActivity {
         preferences.setQueueName(name);
     }
 
-    public int getCurrentTrackPosition(){
-        int i = 0;
-        for(Track t : queueTracks){
-            if(t == currentTrack)
-                break;
-            else i++;
-        }
-        return i;
-    }
-
-    public ArrayList<Track> getQueueTracks(){
-        return this.queueTracks;
-    }
-
-    public void setQueueTracks(ArrayList<Track> tracks){
-        this.queueTracks = tracks;
-    }
 
     private ArrayList<Track> stringToQueue(String str){
         ArrayList<Track> tracks = new ArrayList<>();
@@ -569,13 +557,30 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(String response) {
                             findViewById(R.id.loading_circle).setVisibility(View.GONE);
                             queueFragment.queueTracks = stringToQueue(response);
+                            if (queueFragment.queueTracks.size() == 0)
+                                setPlaybackVisibility(false);
                             if(selectedFragment == queueFragment)
                                 queueFragment.resetAdapter();
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetQueueRequest();
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
                 System.out.println(error.toString());
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
+                findViewById(R.id.loading_circle).setVisibility(View.GONE);
             }
         }) {
             @Override
@@ -613,15 +618,29 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(String response) {
                     queueFragment.queueTracks.add(track);
-                    Toast.makeText(MainActivity.this, "Track added to queueTracks", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Track added to queue", Toast.LENGTH_SHORT).show();
                     if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED)
-                        hubConnection.send("UpdateQueue");
+                        hubConnection.send("UpdateQueue", queueName);
                 }
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-                    System.out.println(apiToken);
-                    System.out.println(error);
+                    String s = getString(R.string.unknown_err);
+                    if(error instanceof NoConnectionError){
+                        s = getString(R.string.no_connection_err);
+                    }
+                    else if (error instanceof TimeoutError) {
+                        sendPostTrackRequest(track);
+                    }
+                    else if (error instanceof AuthFailureError) {
+                        s = getString(R.string.auth_failure_err);
+                    } else if (error instanceof ServerError) {
+                        s = new ServerErrorHandler().getErrorString(error);
+                    }
+                    System.out.println(error.toString());
+                    if(!(error instanceof TimeoutError))
+                        Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
+                    findViewById(R.id.loading_circle).setVisibility(View.GONE);
                 }
             }) {
                 @Override
@@ -663,14 +682,29 @@ public class MainActivity extends AppCompatActivity {
                  public void onResponse(String response) {
                      preferences.setQueueId(0);
                      if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED)
-                         hubConnection.send("UpdateUserList");
+                         hubConnection.send("RemoveFromQueue", queueName);
                      startActivity(new Intent(getApplicationContext(), HomeActivity.class));
                      finish();
                  }
             }, new Response.ErrorListener() {
                   @Override
                   public void onErrorResponse(VolleyError error) {
+                      String s = getString(R.string.unknown_err);
+                      if(error instanceof NoConnectionError){
+                          s = getString(R.string.no_connection_err);
+                      }
+                      else if (error instanceof TimeoutError) {
+                          sendQuitQueueRequest();
+                      }
+                      else if (error instanceof AuthFailureError) {
+                          s = getString(R.string.auth_failure_err);
+                      } else if (error instanceof ServerError) {
+                          s = new ServerErrorHandler().getErrorString(error);
+                      }
                       System.out.println(error.toString());
+                      if(!(error instanceof TimeoutError))
+                          Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
+                      findViewById(R.id.loading_circle).setVisibility(View.GONE);
                   }
               }) {
                   @Override
@@ -683,7 +717,7 @@ public class MainActivity extends AppCompatActivity {
               queue.add(stringRequest);
     }
 
-    public void sendPutTrackRequest(int from, int to){
+    /*public void sendPutTrackRequest(int from, int to){
         //CHANGE URL WHEN IMPLEMENTED ON SERVER
         String url = "https://ubiq.azurewebsites.net/api/Sala/Users?SalaId=" + queueId;
 
@@ -715,7 +749,7 @@ public class MainActivity extends AppCompatActivity {
         };
         //Add the request to the RequestQueue.
         queue.add(stringRequest);
-    }
+    }*/
 
     public void sendGetUsersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Lista?SalaId=" + queueId;
@@ -740,7 +774,64 @@ public class MainActivity extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetUsersRequest();
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
                 System.out.println(error.toString());
+                Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
+                findViewById(R.id.loading_circle).setVisibility(View.GONE);
+            }
+        })
+        {
+            @Override
+            public Map getHeaders() throws AuthFailureError {
+                HashMap headers = new HashMap();
+                headers.put("Authorization", "Bearer " + apiToken);
+                return headers;
+            }
+        };
+        queue.add(stringRequest);
+    }
+
+    public void sendGetCurrentTrackRequest(int pos){
+        String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Lista?SalaId=" + queueId;
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        loadTrack(pos);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetCurrentTrackRequest(pos);
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                System.out.println(error.toString());
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
                 findViewById(R.id.loading_circle).setVisibility(View.GONE);
             }
         })
@@ -756,10 +847,9 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-    //TESTE SIGNALR
     public void sendUpdateUsers(){
         if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED){
-            hubConnection.send("UpdateUserList");
+            hubConnection.send("UpdateUserList", queueName);
         }
     }
 
@@ -769,7 +859,7 @@ public class MainActivity extends AppCompatActivity {
                 pausePlayback();
             }
             if(queueFragment.queueTracks.size() == 1){
-                setPlaybackVisible(false);
+                setPlaybackVisibility(false);
             }
             else {
                 loadNextTrack(0);
@@ -777,13 +867,13 @@ public class MainActivity extends AppCompatActivity {
         }
         queueFragment.queueTracks.remove(position);
         if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED)
-            hubConnection.send("UpdateQueue");
+            hubConnection.send("UpdateQueue", queueName);
     }
 
     public void deleteQueue(){
         preferences.setQueueId(0);
         if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED)
-            hubConnection.send("DeleteQueue");
+            hubConnection.send("DeleteQueue", queueName);
         Intent startIntent = new Intent(getApplicationContext(), HomeActivity.class);
         startActivity(startIntent);
         finish();

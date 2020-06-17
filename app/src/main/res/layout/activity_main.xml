@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/toolbar"
-        android:layout_above="@id/bottom_navigation" />
+        android:layout_above="@id/playback" />
 
     <ProgressBar
         android:id="@+id/loading_circle"
@@ -24,19 +24,25 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"/>
 
-    <include layout="@layout/playback_controller"
-        android:id="@+id/playback_controller"
+    <RelativeLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_width="match_parent"
         android:layout_above="@id/bottom_navigation"
-        android:visibility="gone"/>
+        android:id="@+id/playback">
 
-    <include layout="@layout/playback_viewer"
-        android:id="@+id/playback_viewer"
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent"
-        android:layout_above="@id/bottom_navigation"
-        android:visibility="gone"/>
+        <include layout="@layout/playback_controller"
+            android:id="@+id/playback_controller"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:visibility="gone"/>
+
+        <include layout="@layout/playback_viewer"
+            android:id="@+id/playback_viewer"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+
+            android:visibility="gone"/>
+    </RelativeLayout>
 
     <RelativeLayout
         android:layout_width="wrap_content"

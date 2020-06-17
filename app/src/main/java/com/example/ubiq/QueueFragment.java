@@ -17,9 +17,12 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.ServerError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -68,8 +71,6 @@ public class QueueFragment extends Fragment {
         }
         else{
             getView().findViewById(R.id.empty_text).setVisibility(View.VISIBLE);
-            //TODO remover playback com signalR
-            ((MainActivity) getActivity()).setPlaybackVisible(false);
         }
         QueueAdapter adapter = new QueueAdapter(getActivity(), queueTracks);
         queueListView.setAdapter(adapter);
@@ -103,6 +104,21 @@ public class QueueFragment extends Fragment {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendDeleteTrackRequest(index);
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                System.out.println(error.toString());
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(getActivity(), s, Toast.LENGTH_SHORT).show();
                 System.out.println(error.toString());
             }
         })
@@ -155,7 +171,6 @@ public class QueueFragment extends Fragment {
                     public void onClick(View v) {
                         ((MainActivity) getActivity()).loadTrack(position);
                         ((MainActivity) getActivity()).playTrack(position);
-                        ((MainActivity) getActivity()).setPlaybackVisible(true);
                     }
                 });
                 deleteButton.setVisibility(View.VISIBLE);

@@ -24,4 +24,7 @@
     <string name="add_filters_tab">Add Filters</string>
     <string name="change_name_success">Changed queue name</string>
     <string name="change_pwd_success">Changed queue password</string>
+    <string name="no_connection_err">No internet connection</string>
+    <string name="auth_failure_err">Authentication failure</string>
+    <string name="unknown_err">Unknown error ocurred</string>
 </resources>

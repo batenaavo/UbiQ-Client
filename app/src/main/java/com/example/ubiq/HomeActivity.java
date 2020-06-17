@@ -25,9 +25,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.ServerError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.StringRequest;
@@ -308,7 +311,20 @@ public class HomeActivity extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Toast.makeText(HomeActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
+                String s = "Unknown error ocurred";
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetNearQueuesRequest(coordX,  coordY, limit);
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(HomeActivity.this, s, Toast.LENGTH_SHORT).show();
                 findViewById(R.id.loading_circle).setVisibility(View.GONE);
                 System.out.println(error.toString());
             }
@@ -349,7 +365,20 @@ public class HomeActivity extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Toast.makeText(HomeActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
+                String s = "Unknown error ocurred";
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetQueuesByNameRequest(name);
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(HomeActivity.this, s, Toast.LENGTH_SHORT).show();
                 findViewById(R.id.loading_circle).setVisibility(View.GONE);
                 System.out.println(error.toString());
             }
@@ -388,8 +417,23 @@ public class HomeActivity extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                loadingDialog.dismiss();
+                String s = "Unknown error ocurred";
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendJoinRequest(name, password,userType);
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(HomeActivity.this, s, Toast.LENGTH_SHORT).show();
+                findViewById(R.id.loading_circle).setVisibility(View.GONE);
                 System.out.println(error.toString());
+                loadingDialog.dismiss();
             }
         })
         {
@@ -437,8 +481,23 @@ public class HomeActivity extends AppCompatActivity {
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
+                    String s = "Unknown error ocurred";
+                    if(error instanceof NoConnectionError){
+                        s = getString(R.string.no_connection_err);
+                    }
+                    else if (error instanceof TimeoutError) {
+                        sendCreateQueueRequest(name, password, coordX, coordY,maxT, maxH);
+                    }
+                    else if (error instanceof AuthFailureError) {
+                        s = getString(R.string.auth_failure_err);
+                    } else if (error instanceof ServerError) {
+                        s = new ServerErrorHandler().getErrorString(error);
+                    }
+                    if(!(error instanceof TimeoutError))
+                        Toast.makeText(HomeActivity.this, s, Toast.LENGTH_SHORT).show();
+                    findViewById(R.id.loading_circle).setVisibility(View.GONE);
+                    System.out.println(error.toString());
                     loadingDialog.dismiss();
-                    System.out.println(error);
                 }
             }) {
                 @Override
@@ -492,8 +551,23 @@ public class HomeActivity extends AppCompatActivity {
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
+                    String s = "Unknown error ocurred";
+                    if(error instanceof NoConnectionError){
+                        s = getString(R.string.no_connection_err);
+                    }
+                    else if (error instanceof TimeoutError) {
+                        sendCreateQueueRequest(name, password, maxT, maxH);
+                    }
+                    else if (error instanceof AuthFailureError) {
+                        s = getString(R.string.auth_failure_err);
+                    } else if (error instanceof ServerError) {
+                        s = new ServerErrorHandler().getErrorString(error);
+                    }
+                    if(!(error instanceof TimeoutError))
+                        Toast.makeText(HomeActivity.this, s, Toast.LENGTH_SHORT).show();
+                    findViewById(R.id.loading_circle).setVisibility(View.GONE);
+                    System.out.println(error.toString());
                     loadingDialog.dismiss();
-                    System.out.println(error);
                 }
             }) {
                 @Override

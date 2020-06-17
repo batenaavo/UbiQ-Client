@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,9 +21,12 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NoConnectionError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.ServerError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -98,7 +102,21 @@ public class ArtistFragment extends Fragment {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    getAlbumInfoAndStartFragment(album,img);
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
                 System.out.println(error.toString());
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(getActivity(), s, Toast.LENGTH_SHORT).show();
             }
         })
         {
