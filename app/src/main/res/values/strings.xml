@@ -9,7 +9,8 @@
     <string name="register_text">New Here ?  Create Account</string>
     <string name="login_text">Already Registered ? Login Here</string>
     <string name="empty_search">No matches for your search!</string>
-    <string name="gps_denied">Allow location access to view queues near you!</string>
+    <string name="gps_denied">We need your permission to find queues near you!</string>
+    <string name="allow_location_btn_txt">Click here to allow location access</string>
     <string name="no_queues_near">There are no queues near you!</string>
     <string name="gps_error">There was an error getting your current location!</string>
     <string name="loading">Loading...</string>
@@ -24,7 +25,17 @@
     <string name="add_filters_tab">Add Filters</string>
     <string name="change_name_success">Changed queue name</string>
     <string name="change_pwd_success">Changed queue password</string>
-    <string name="no_connection_err">No internet connection</string>
+    <string name="no_connection_err">Oops.. There was a connection error!</string>
     <string name="auth_failure_err">Authentication failure</string>
     <string name="unknown_err">Unknown error ocurred</string>
+    <string name="empty_pwd">Empty password</string>
+    <string name="empty_user_pwd">Empty username or password</string>
+    <string name="reload">Reload</string>
+    <string name="close">Close</string>
+    <string name="banned">You have been banned from this queue.</string>
+    <string name="deleted_queue">This queue has been deleted.</string>
+    <string name="spotify_auth_error">Spotify authentication failed.</string>
+    <string name="not_premium_msg">Upgrade your Spotify account to host your own queue!</string>
+    <string name="logout">Log Out</string>
+    <string name="show_filters">Queue filters</string>
 </resources>

@@ -169,8 +169,7 @@ public class QueueFragment extends Fragment {
                 row.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ((MainActivity) getActivity()).loadTrack(position);
-                        ((MainActivity) getActivity()).playTrack(position);
+                        ((MainActivity) getActivity()).loadTrack(position, 1);
                     }
                 });
                 deleteButton.setVisibility(View.VISIBLE);

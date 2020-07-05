@@ -5,6 +5,7 @@ import java.lang.String;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -24,6 +25,9 @@ import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.spotify.sdk.android.authentication.AuthenticationClient;
+import com.spotify.sdk.android.authentication.AuthenticationRequest;
+import com.spotify.sdk.android.authentication.AuthenticationResponse;
 
 import org.json.JSONObject;
 
@@ -53,7 +57,7 @@ public class RegisterActivity extends AppCompatActivity {
         //login automático se o user já estiver registado
         if (preferences.isLoggedIn()) {
             if(System.currentTimeMillis() - preferences.getAPITokenTime() < 1209599999){
-                startActivity(new Intent(getApplicationContext(), HomeActivity.class));
+                startActivity(new Intent(getApplicationContext(), SplashActivity.class));
                 finish();
             }
             else
@@ -132,6 +136,50 @@ public class RegisterActivity extends AppCompatActivity {
 
     }
 
+    public void authenticateSpotifyClient(){
+        AuthenticationRequest.Builder builder =
+                new AuthenticationRequest.Builder(preferences.getSpotifyClientId(), AuthenticationResponse.Type.TOKEN, preferences.getSpotifyRedirectUri());
+
+        builder.setScopes(new String[]{"app-remote-control", "user-read-private"});
+        AuthenticationRequest request = builder.build();
+
+        AuthenticationClient.openLoginActivity(this, preferences.getRequestCode(), request);
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+
+        // Check if result comes from the correct activity
+        if (requestCode == preferences.getRequestCode()) {
+            AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
+
+            switch (response.getType()) {
+                // Response was successful and contains auth token
+                case TOKEN:
+                    preferences.setSpotifyAccessToken(response.getAccessToken());
+                    preferences.setSpotifyTokenTime(System.currentTimeMillis());
+                    startActivity(new Intent(getApplicationContext(), SplashActivity.class));
+                    finish();
+                    break;
+
+                // Auth flow returned an error
+                case ERROR:
+                    progressBar.setVisibility(View.GONE);
+                    errorText.setVisibility(View.VISIBLE);
+                    errorText.setText(R.string.spotify_auth_error);
+                    System.out.println("error: " + response.toString());
+                    break;
+                // Most likely auth flow was cancelled
+                default:
+                    progressBar.setVisibility(View.GONE);
+                    errorText.setVisibility(View.VISIBLE);
+                    errorText.setText(R.string.spotify_auth_error);
+                    System.out.println(response.toString());
+            }
+        }
+    }
+
+
     private void sendPostRegisterRequest(String email, String username, String password) {
         errorText.setVisibility(View.GONE);
         String url = "https://ubiq.azurewebsites.net/api/Account/Register";
@@ -194,12 +242,18 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         System.out.println(response);
-                        preferences.setUsername(username);
+                        preferences.setUsername(username.toLowerCase());
                         preferences.setPassword(password);
                         preferences.createLogin();
                         setAPItoken(response);
-                        startActivity(new Intent(getApplicationContext(), HomeActivity.class));
-                        finish();
+                        if((preferences.getSpotifyAccessToken() == null ||
+                                System.currentTimeMillis() - preferences.getSpotifyTokenTime() > 3500000)){
+                            authenticateSpotifyClient();
+                        }
+                        else {
+                            startActivity(new Intent(getApplicationContext(), SplashActivity.class));
+                            finish();
+                        }
                     }
                 }, new Response.ErrorListener() {
             @Override

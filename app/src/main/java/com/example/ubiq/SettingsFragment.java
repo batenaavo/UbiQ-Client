@@ -4,14 +4,11 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.media.Image;
 import android.os.Bundle;
 import android.text.InputType;
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,15 +16,11 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.NumberPicker;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -43,12 +36,10 @@ import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +80,6 @@ public class SettingsFragment extends Fragment {
             settings.add("Set Genre Filters");
             settings.add("Change Queue Name");
             settings.add("Change Queue Password");
-            settings.add("Set Maximum Users");
             settings.add("Banned Users");
             settings.add("Delete Queue");
         }
@@ -105,26 +95,6 @@ public class SettingsFragment extends Fragment {
 
     public void cancelRequests(){
         canceled = true;
-    }
-
-    public void showLimitUsersDialog(View v) {
-        Dialog limitUsersForm = new Dialog(getActivity());
-        limitUsersForm.setContentView(R.layout.form_limit_users);
-        Button submitButton = limitUsersForm.findViewById(R.id.submit_button);
-        NumberPicker np = limitUsersForm.findViewById(R.id.number_picker);
-        np.setMinValue(1);
-        np.setMaxValue(10);
-        np.setValue(10);
-
-        submitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                limitUsersForm.dismiss();
-            }
-        });
-
-        limitUsersForm.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        limitUsersForm.show();
     }
 
     private void showDeleteQueueDialog(View v) {
@@ -148,8 +118,8 @@ public class SettingsFragment extends Fragment {
 
     public void showBannedUsersDialog(View v) {
         Dialog bannedUsersForm = new Dialog(getActivity());
-        bannedUsersForm.setContentView(R.layout.form_banned_users);
-        ListView bannedUsersListView = bannedUsersForm.findViewById(R.id.banned_users_list_view);
+        bannedUsersForm.setContentView(R.layout.form_simple_list);
+        ListView bannedUsersListView = bannedUsersForm.findViewById(R.id.list_view);
 
         BannedUsersAdapter adapter = new BannedUsersAdapter((getActivity().getApplicationContext()), bannedUsers);
         bannedUsersListView.setAdapter(adapter);
@@ -159,7 +129,50 @@ public class SettingsFragment extends Fragment {
     }
 
     private void sendGetBannedUsersRequest(){
-        //TODO
+        String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Banidos?SalaId=" + queueId;
+
+        RequestQueue queue = Volley.newRequestQueue(getActivity());
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        if(!canceled) {
+                            bannedUsers = new HttpResponseManager().responseToStringList(response);
+                            resetSettingsAdapter();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetBannedUsersRequest();
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                System.out.println(error.toString());
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(getActivity(), s, Toast.LENGTH_SHORT).show();
+            }
+        })
+        {
+            @Override
+            public Map getHeaders() throws AuthFailureError {
+                HashMap headers = new HashMap();
+                headers.put("Authorization", "Bearer " + apiToken);
+                return headers;
+            }
+        };
+        //Add the request to the RequestQueue.
+        queue.add(stringRequest);
     }
 
     private void sendChangeQueueNameRequest(String newName){
@@ -347,7 +360,7 @@ public class SettingsFragment extends Fragment {
         queue.add(stringRequest);
     }
 
-   private void sendReadmitUserRequest(String user){
+   private void sendReadmitUserRequest(String user, ImageButton add, ImageView check){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Readmitir";
         String requestBody;
 
@@ -359,9 +372,11 @@ public class SettingsFragment extends Fragment {
 
             RequestQueue queue = Volley.newRequestQueue(getActivity());
 
-            StringRequest stringRequest = new StringRequest(Request.Method.DELETE, url, new Response.Listener<String>() {
+            StringRequest stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
+                    add.setVisibility(View.GONE);
+                    check.setVisibility(View.VISIBLE);
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -371,7 +386,7 @@ public class SettingsFragment extends Fragment {
                         s = getString(R.string.no_connection_err);
                     }
                     else if (error instanceof TimeoutError) {
-                        sendReadmitUserRequest(user);
+                        sendReadmitUserRequest(user, add, check);
                     }
                     else if (error instanceof AuthFailureError) {
                         s = getString(R.string.auth_failure_err);
@@ -381,7 +396,6 @@ public class SettingsFragment extends Fragment {
                     System.out.println(error.toString());
                     if(!(error instanceof TimeoutError))
                         Toast.makeText(getActivity(), s, Toast.LENGTH_SHORT).show();
-                    getActivity().findViewById(R.id.loading_circle).setVisibility(View.GONE);
                     System.out.println(error.toString());
                 }
             }) {
@@ -434,7 +448,7 @@ public class SettingsFragment extends Fragment {
             EditText editText = row.findViewById(R.id.edit_text);
             ImageButton confirm = row.findViewById(R.id.confirm_button);
             name.setText(settings.get(position));
-            if(bannedUsers.size() == 0 && position == 4)
+            if(bannedUsers.size() == 0 && position == 3)
                 name.setTextColor(ContextCompat.getColor(context, R.color.common_google_signin_btn_text_light_disabled));
 
             switch(selectedOption){
@@ -497,9 +511,6 @@ public class SettingsFragment extends Fragment {
                                     selectedOption = 2;
                                     resetSettingsAdapter();
                                     break;
-                                case "Set Maximum Users":
-                                    showLimitUsersDialog(row);
-                                    break;
                                 case "Banned Users":
                                     if(bannedUsers.size() > 0)
                                         showBannedUsersDialog(row);
@@ -536,9 +547,7 @@ public class SettingsFragment extends Fragment {
             addButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    sendReadmitUserRequest(users.get(position));
-                    addButton.setVisibility(View.GONE);
-                    check.setVisibility(View.VISIBLE);
+                    sendReadmitUserRequest(users.get(position), addButton, check);
                 }
             });
             return row;

@@ -126,6 +126,7 @@ public class UsersFragment extends Fragment {
                 @Override
                 public void onResponse(String response) {
                     if(!canceled) {
+                        ((MainActivity) getActivity()).banUser(user);
                         resetAdapter();
                     }
                 }
@@ -200,8 +201,9 @@ public class UsersFragment extends Fragment {
             ImageButton banButton = row.findViewById(R.id.ban_user_button);
             userId.setText(users.get(position));
 
-            if(userType.equals("host")){
-               banButton.setVisibility(View.VISIBLE);
+             if(userType.equals("host") && !userId.getText().equals(((MainActivity) getActivity()).getUsername())) {
+                 banButton.setVisibility(View.VISIBLE);
+             }
 
                banButton.setOnClickListener(new View.OnClickListener() {
                    @Override
@@ -209,9 +211,9 @@ public class UsersFragment extends Fragment {
                        showBanConfirmForm(row, users.get(position));
                    }
                });
-            }
 
             return row;
+
         }
     }
 }

@@ -36,8 +36,11 @@ import org.json.JSONArray;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FiltersFragment extends Fragment {
     private TabLayout tabLayout;
@@ -237,7 +240,6 @@ public class FiltersFragment extends Fragment {
         }
     }
 
-    //TODO mudar para DELETE
     private void sendDeleteFiltersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Filtros/Alterar?SalaId=" + queueId;
         String requestBody;
@@ -305,6 +307,7 @@ public class FiltersFragment extends Fragment {
     }
 
     private void sendGetFiltersRequest(){
+        filtersListView.setVisibility(View.GONE);
         getView().findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
         String url = "https://ubiq.azurewebsites.net/api/Sala/Filtros/Lista?SalaId=" + queueId;
 
@@ -353,20 +356,58 @@ public class FiltersFragment extends Fragment {
         queue.add(stringRequest);
     }
 
-    //TODO mudar quando houver BD de filtros
     private void sendGetFiltersByNameRequest(String name){
+        filtersListView.setVisibility(View.GONE);
+        emptyText.setVisibility(View.GONE);
         getView().findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
-        addFilters.clear();
-        addFilters.add("rock");
-        addFilters.add("pop");
-        addFilters.add("rap");
-        addFilters.add("funk");
-        addFilters.add("techno");
-        addFilters.add("house");
-        addFilters.add("jazz");
+        String url = "https://ubiq.azurewebsites.net/api/Filtros?Nome=" + name;
 
-        getView().findViewById(R.id.loading_circle).setVisibility(View.GONE);
-        setAddFiltersAdapter();
+        RequestQueue queue = Volley.newRequestQueue(getActivity());
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        if(!canceled) {
+                            addFilters = responseManager.responseToStringList(response);
+                                addFilters.sort((s1, s2) -> s1.length() - s2.length());
+                            getView().findViewById(R.id.loading_circle).setVisibility(View.GONE);
+                            setAddFiltersAdapter();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                String s = getString(R.string.unknown_err);
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendGetFiltersRequest();
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                System.out.println(error.toString());
+                if(!(error instanceof TimeoutError)) {
+                    Toast.makeText(getActivity(), s, Toast.LENGTH_SHORT).show();
+                    getView().findViewById(R.id.loading_circle).setVisibility(View.GONE);
+                }
+            }
+        })
+        {
+            @Override
+            public Map getHeaders() throws AuthFailureError {
+                HashMap headers = new HashMap();
+                headers.put("Authorization", "Bearer " + apiToken);
+                return headers;
+            }
+        };
+        //Add the request to the RequestQueue.
+        queue.add(stringRequest);
     }
 
 

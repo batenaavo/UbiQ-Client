@@ -4,16 +4,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -51,12 +58,12 @@ import java.util.Map;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private int requestFlag;
     private PrefManager preferences;
     private Toolbar searchBar;
     private ImageButton searchButton;
     private TextView searchInput;
     private TextView emptyText;
+    private TextView allowLocationBtn;
     private ListView queuesListView;
     private TabLayout tabLayout;
     private ArrayList<String> queues;
@@ -79,12 +86,12 @@ public class HomeActivity extends AppCompatActivity {
         this.loadingDialog = new Dialog(this);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         this.apiToken = preferences.getAPIAccessToken();
-        this.requestFlag = 1;
         this.createQueue = (Button) findViewById(R.id.open_form);
         this.queuesListView = findViewById(R.id.queues_list_view);
         this.queues = new ArrayList<>();
         this.searchBar = findViewById(R.id.search_bar);
         this.emptyText = (TextView) findViewById(R.id.empty_text);
+        this.allowLocationBtn = (TextView) findViewById(R.id.allow_location_btn);
         this.searchInput = (TextView) findViewById(R.id.search_input);
         this.searchButton = (ImageButton) findViewById(R.id.search_button);
         this.tabLayout = (TabLayout) findViewById(R.id.simpleTabLayout);
@@ -95,16 +102,32 @@ public class HomeActivity extends AppCompatActivity {
         tabLayout.addTab(nearTab);
         tabLayout.addTab(searchTab);
 
-        if(preferences.getQueueId()!= 0){
-            Intent startIntent = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(startIntent);
-            finish();
+        setSupportActionBar(findViewById(R.id.toolbar));
+        setTitle("UbiQ");
+
+        if(getIntent().hasExtra("BANNED")){
+            if(getIntent().getExtras().getBoolean("BANNED")) {
+                showConfirmDialog(getResources().getString(R.string.banned));
+            }
+        }
+        else if(getIntent().hasExtra("DELETED")){
+            if(getIntent().getExtras().getBoolean("DELETED")) {
+                showConfirmDialog(getResources().getString(R.string.deleted_queue));
+            }
         }
 
         this.createQueue.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showCreateQueueDialog(v);
+                if(preferences.getSpotifyAccountType() == null){
+                    startActivity(new Intent(getApplicationContext(), SplashActivity.class));
+                    finish();
+                }
+                else if(preferences.getSpotifyAccountType().equals("premium")) {
+                    showCreateQueueDialog(v);
+                }
+                else
+                    showConfirmDialog(getResources().getString(R.string.not_premium_msg));
             }
         });
 
@@ -112,11 +135,15 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 if (tab.getPosition() == 0) {
-                    requestFlag = 1;
                     searchBar.setVisibility(View.GONE);
-                    requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
-                                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET}
-                            , 10);
+                    if(preferences.getLocationAccess() < 1){
+                        emptyText.setText(R.string.gps_denied);
+                        allowLocationBtn.setVisibility(View.VISIBLE);
+                        emptyText.setVisibility(View.VISIBLE);
+                    }
+                    else{
+                        getLocationAndSendRequest("get");
+                    }
                 } else {
                     searchBar.setVisibility(View.VISIBLE);
                     searchInput.setText("");
@@ -128,10 +155,25 @@ public class HomeActivity extends AppCompatActivity {
                 queuesListView.setVisibility(View.GONE);
                 findViewById(R.id.loading_circle).setVisibility(View.GONE);
                 emptyText.setVisibility(View.GONE);
+                allowLocationBtn.setVisibility(View.GONE);
             }
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
+                if (tab.getPosition() == 0) {
+                    searchBar.setVisibility(View.GONE);
+                    if(preferences.getLocationAccess() < 1){
+                        emptyText.setText(R.string.gps_denied);
+                        allowLocationBtn.setVisibility(View.VISIBLE);
+                        emptyText.setVisibility(View.VISIBLE);
+                    }
+                    else{
+                        getLocationAndSendRequest("get");
+                    }
+                } else {
+                    searchBar.setVisibility(View.VISIBLE);
+                    searchInput.setText("");
+                }
             }
         });
 
@@ -143,44 +185,90 @@ public class HomeActivity extends AppCompatActivity {
                 sendGetQueuesByNameRequest(input);
             }
         });
+
+        allowLocationBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(preferences.getLocationAccess() == 0) {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET}
+                            , 10);
+                }
+                else if(preferences.getLocationAccess() == -1)
+                    openAppSettings();
+            }
+        });
+
         requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET}
                 , 10);
+
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+            MenuInflater inflater = getMenuInflater();
+            inflater.inflate(R.menu.logout_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.logout:
+                sendLogoutRequest();
+            default:
+                return false;
+        }
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case 10:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    mFusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
-                        if (location != null) {
-                            if(requestFlag == 1)
-                                sendGetNearQueuesRequest(location.getLatitude(), location.getLongitude(), 20);
-                            else {
-                                sendCreateQueueRequest(newQueueName, newQueuePwd, location.getLatitude(), location.getLongitude(), maxTracks, maxTime);
-                            }
-                        }
-                        else{
-                            findViewById(R.id.loading_circle).setVisibility(View.GONE);
-                            emptyText.setText(R.string.gps_error);
-                            emptyText.setVisibility(View.VISIBLE);
-                        }
-                    });
+                    preferences.setLocationAccess(1);
+                    emptyText.setVisibility(View.GONE);
+                    getLocationAndSendRequest("get");
                 }
-                else if (requestFlag == 2){
-                    sendCreateQueueRequest(newQueueName, newQueuePwd, maxTracks, maxTime);
+                else if(!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)){
+                    preferences.setLocationAccess(-1);
                 }
                 else{
-                    findViewById(R.id.loading_circle).setVisibility(View.GONE);
+                    preferences.setLocationAccess(0);
                     emptyText.setText(R.string.gps_denied);
+                    allowLocationBtn.setVisibility(View.VISIBLE);
                     emptyText.setVisibility(View.VISIBLE);
                 }
                 break;
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        int permissionLocation = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
+        if(permissionLocation == PackageManager.PERMISSION_GRANTED) {
+            emptyText.setVisibility(View.GONE);
+            allowLocationBtn.setVisibility(View.GONE);
+            preferences.setLocationAccess(1);
+            getLocationAndSendRequest("get");
+        }
+    }
+
+    public void openAppSettings() {
+        Uri packageUri = Uri.fromParts( "package", getApplicationContext().getPackageName(), null );
+
+        Intent applicationDetailsSettingsIntent = new Intent();
+
+        applicationDetailsSettingsIntent.setAction( Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        applicationDetailsSettingsIntent.setData( packageUri );
+        applicationDetailsSettingsIntent.addFlags( Intent.FLAG_ACTIVITY_NEW_TASK );
+
+        getApplicationContext().startActivity( applicationDetailsSettingsIntent );
+
     }
 
     public void showCreateQueueDialog(View v) {
@@ -213,10 +301,13 @@ public class HomeActivity extends AppCompatActivity {
                 maxTime = tp.getValue();
                 newQueueName = queueName.getText().toString();
                 newQueuePwd = queuePwd.getText().toString();
-                requestFlag = 2;
-                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
-                                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET}
-                        , 10);
+
+                if(newQueueName.isEmpty() || newQueuePwd.isEmpty())
+                    Toast.makeText(HomeActivity.this, R.string.empty_user_pwd, Toast.LENGTH_SHORT).show();
+                else if(preferences.getLocationAccess() == 1)
+                    getLocationAndSendRequest("post");
+                else
+                    sendCreateQueueRequest(newQueueName, newQueuePwd, maxTracks, maxTime);
             }
         });
         newQueueForm.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -243,7 +334,10 @@ public class HomeActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String password = queuePwd.getText().toString();
-                sendJoinRequest(selectedQueue, password, "guest");
+                if(!password.isEmpty())
+                    sendJoinRequest(selectedQueue, password, "guest", false);
+                else
+                    Toast.makeText(HomeActivity.this, R.string.empty_pwd, Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -255,6 +349,23 @@ public class HomeActivity extends AppCompatActivity {
         loadingDialog.setContentView(R.layout.loading_popup);
         loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         loadingDialog.show();
+    }
+
+    public void showConfirmDialog(String s){
+        Dialog banned = new Dialog(this);
+        banned.setContentView(R.layout.form_confirm_action);
+        TextView t = banned.findViewById(R.id.form_title);
+        t.setText(s);
+        Button b = banned.findViewById(R.id.submit_button);
+        b.setText(R.string.close);
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                banned.dismiss();
+            }
+        });
+        banned.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        banned.show();
     }
 
     private ArrayList<String> getNearQueuesFromJSONString(String result){
@@ -285,7 +396,25 @@ public class HomeActivity extends AppCompatActivity {
         return list;
     }
 
+    private void getLocationAndSendRequest(String req){
+        mFusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
+            if (location != null) {
+                if(req.equals("get"))
+                    sendGetNearQueuesRequest(location.getLatitude(), location.getLongitude(), 20);
+                else if (req.equals("post"))
+                    sendCreateQueueRequest(newQueueName, newQueuePwd, location.getLatitude(), location.getLongitude(),
+                maxTracks, maxTime);
+            }
+            else{
+                findViewById(R.id.loading_circle).setVisibility(View.GONE);
+                emptyText.setText(R.string.gps_error);
+                emptyText.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
     private void sendGetNearQueuesRequest(double coordX, double coordY, int limit){
+        queuesListView.setVisibility(View.GONE);
         findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
         String url = "https://ubiq.azurewebsites.net/api/Sala/Procurar/Localizacao/?Xcoord="
                 + coordX + "&Ycoord=" + coordY + "&NumeroSalas=" + limit;
@@ -341,6 +470,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void sendGetQueuesByNameRequest(String name){
+        queuesListView.setVisibility(View.GONE);
         findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
         String url = "https://ubiq.azurewebsites.net/api/Sala/Procurar?Nome=" + name;
 
@@ -394,8 +524,9 @@ public class HomeActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-    public void sendJoinRequest(String name, String password, String userType){
-        showLoadingDialog();
+    public void sendJoinRequest(String name, String password, String userType, Boolean loading){
+        if(!loading)
+            showLoadingDialog();
         String url = "https://ubiq.azurewebsites.net/api/Sala/Entrar";
 
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -422,7 +553,7 @@ public class HomeActivity extends AppCompatActivity {
                     s = getString(R.string.no_connection_err);
                 }
                 else if (error instanceof TimeoutError) {
-                    sendJoinRequest(name, password,userType);
+                    sendJoinRequest(name, password,userType,false);
                 }
                 else if (error instanceof AuthFailureError) {
                     s = getString(R.string.auth_failure_err);
@@ -476,7 +607,7 @@ public class HomeActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(String response) {
                     System.out.println(response);
-                    sendJoinRequest(name, password, "host");
+                    sendJoinRequest(name, password, "host", true);
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -546,7 +677,7 @@ public class HomeActivity extends AppCompatActivity {
             StringRequest stringRequest = new StringRequest(1, url, new Response.Listener<String>() {
                 @Override
                 public void onResponse(String response) {
-                    sendJoinRequest(name, password, "host");
+                    sendJoinRequest(name, password, "host", true);
                 }
             }, new Response.ErrorListener() {
                 @Override
@@ -596,6 +727,50 @@ public class HomeActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void sendLogoutRequest(){
+        String url = "https://ubiq.azurewebsites.net/api/Account/Logout";
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        preferences.clearSession();
+                        startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
+                        finish();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                String s = "Unknown error ocurred";
+                if(error instanceof NoConnectionError){
+                    s = getString(R.string.no_connection_err);
+                }
+                else if (error instanceof TimeoutError) {
+                    sendLogoutRequest();
+                }
+                else if (error instanceof AuthFailureError) {
+                    s = getString(R.string.auth_failure_err);
+                } else if (error instanceof ServerError) {
+                    s = new ServerErrorHandler().getErrorString(error);
+                }
+                if(!(error instanceof TimeoutError))
+                    Toast.makeText(HomeActivity.this, s, Toast.LENGTH_SHORT).show();
+                System.out.println(error.toString());
+            }
+        })
+        {
+            @Override
+            public Map getHeaders() throws AuthFailureError {
+                HashMap headers = new HashMap();
+                headers.put("Authorization", "Bearer " + apiToken);
+                return headers;
+            }
+        };
+        queue.add(stringRequest);
     }
 
     class SearchAdapter extends ArrayAdapter<String> {

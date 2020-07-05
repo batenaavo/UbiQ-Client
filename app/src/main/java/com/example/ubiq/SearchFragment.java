@@ -127,6 +127,7 @@ public class SearchFragment extends Fragment {
                 }
                 else if (error instanceof AuthFailureError) {
                     s = getString(R.string.auth_failure_err);
+                    ((MainActivity) getActivity()).authenticateSpotifyClient();
                 } else if (error instanceof ServerError) {
                     s = new ServerErrorHandler().getErrorString(error);
                 }

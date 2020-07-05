@@ -15,6 +15,7 @@ public class PrefManager {
     private static final String QUEUE_ID = "queue_id";
     private static final String USER_TYPE = "user_type";
     private static final String QUEUE_NAME = "queue_name";
+    private static final String LOCATION_ACCESS = "location_access";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
     private static final String SPOTIFY_ACCESS_TOKEN = "spotify_token";
     private static final String API_ACCESS_TOKEN = "api_token";
@@ -23,13 +24,16 @@ public class PrefManager {
     private static final String SPOTIFY_CLIENT_ID = "client_id";
     private static final String SPOTIFY_REDIRECT_URI = "redirect_uri";
     private static final String SPOTIFY_TOKEN_TIME = "spotify_token_time";
-
+    private static final String SPOTIFY_USER_TYPE = "spotify_user_type";
 
     //initializing sharedPreferences
     public PrefManager(Context context) {
         this._context = context;
         pref = _context.getSharedPreferences(PREF_NAME, PRIVATE_MODE);
         editor = pref.edit();
+        setSpotifyClientId();
+        setSpotifyRedirectUri();
+        setRequestCode();
     }
 
     public void setUsername(String email) {
@@ -59,9 +63,22 @@ public class PrefManager {
         return pref.getString(API_ACCESS_TOKEN, null);
     }
 
+    public String getSpotifyAccessToken() {
+        return pref.getString(SPOTIFY_ACCESS_TOKEN, null);
+    }
+
     public void setSpotifyAccessToken(String token) {
         editor.putString(SPOTIFY_ACCESS_TOKEN, token);
         editor.commit();
+    }
+
+    public void setSpotifyAccountType(String type){
+        editor.putString(SPOTIFY_USER_TYPE, type);
+        editor.commit();
+    }
+
+    public String getSpotifyAccountType() {
+        return pref.getString(SPOTIFY_USER_TYPE, null);
     }
 
     public void setQueueId(int id) {
@@ -91,9 +108,6 @@ public class PrefManager {
         return pref.getString(QUEUE_NAME, null);
     }
 
-    public String getSpotifyAccessToken() {
-        return pref.getString(SPOTIFY_ACCESS_TOKEN, null);
-    }
 
     public void setSpotifyRedirectUri() {
         editor.putString(SPOTIFY_REDIRECT_URI, "http://com.example.ubiq/callback/");
@@ -142,7 +156,6 @@ public class PrefManager {
 
     //Logging in user and setting the name and profile picture
     public void createLogin(
-
     ) {
         //here, handle the mobile number or email or any details that you
         //use for the login. Then do this:
@@ -153,6 +166,16 @@ public class PrefManager {
     public boolean isLoggedIn() {
         return pref.getBoolean(KEY_IS_LOGGED_IN, false);
         //false is the default value in case there's nothing found with the key
+    }
+
+    public int getLocationAccess() {
+        return pref.getInt(LOCATION_ACCESS, 0);
+        //false is the default value in case there's nothing found with the key
+    }
+
+    public void setLocationAccess(int i){
+        editor.putInt(LOCATION_ACCESS, i);
+        editor.commit();
     }
 
     public void clearSession() {

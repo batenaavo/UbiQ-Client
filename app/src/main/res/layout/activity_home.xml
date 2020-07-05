@@ -6,10 +6,15 @@
     android:layout_height="match_parent"
     tools:context=".HomeActivity">
 
+    <include
+        layout = "@layout/app_toolbar"
+        android:id="@+id/toolbar"/>
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/simpleTabLayout"
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:layout_below="@id/toolbar"
         app:tabMode="fixed"
         app:tabGravity="fill"/>
 
@@ -28,10 +33,10 @@
 
         <ProgressBar
             android:id="@+id/loading_circle"
-            style="?android:attr/progressBarStyle"
+            style="?android:attr/progressBarStyleLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="visible"
+            android:visibility="gone"
             android:layout_centerInParent="true"/>
 
 
@@ -40,11 +45,25 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="25dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginLeft="20dp"
             android:text="No queues available near you!"
-            android:layout_centerHorizontal="true"
+            android:layout_centerInParent="true"
             android:layout_below="@id/search_bar"
             android:textAlignment="center"
             android:textSize="20sp"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/allow_location_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/empty_text"
+            android:layout_marginTop="20dp"
+            android:layout_centerHorizontal="true"
+            android:text="@string/allow_location_btn_txt"
+            android:textSize="15dp"
+            android:textColor="#41A4FF"
             android:visibility="gone"/>
 
 
