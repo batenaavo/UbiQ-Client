@@ -138,8 +138,6 @@ public class SplashActivity extends AppCompatActivity {
             public void onErrorResponse(VolleyError error) {
                 if (error instanceof TimeoutError)
                     sendGetUserTypeRequest();
-                else if (error instanceof AuthFailureError)
-                    authenticateSpotifyClient();
                 else
                     noConnectionLayout.setVisibility(View.VISIBLE);
                 System.out.println(error.toString());

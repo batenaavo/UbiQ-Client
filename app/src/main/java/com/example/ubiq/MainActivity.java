@@ -320,14 +320,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void pausePlayback(){
-        //mSpotifyAppRemote.getPlayerApi().pause();
+        mSpotifyAppRemote.getPlayerApi().pause();
         pausePlayButton.setChecked(false);
         progressBarAnimator.pause();
         isPlaying = false;
     }
 
     private void resumePlayback(){
-        //mSpotifyAppRemote.getPlayerApi().resume();
+        mSpotifyAppRemote.getPlayerApi().resume();
         pausePlayButton.setChecked(true);
         progressBarAnimator.resume();
         isPlaying = true;
@@ -549,10 +549,10 @@ public class MainActivity extends AppCompatActivity {
     public void playTrack(int position){
         Track track = queueFragment.queueTracks.get(position);
         if(appRemoteConnected){
-            //mSpotifyAppRemote.getPlayerApi().play(track.getSpotifyId());
+            mSpotifyAppRemote.getPlayerApi().play(track.getSpotifyId());
         }
         else{
-            //connectSpotifyAppRemote(track.getSpotifyId());
+            connectSpotifyAppRemote(track.getSpotifyId());
         }
         pausePlayButton.setChecked(true);
         this.isPlaying = true;
@@ -782,40 +782,6 @@ public class MainActivity extends AppCompatActivity {
               };                                                                                                                                               
               queue.add(stringRequest);
     }
-
-    /*public void sendPutTrackRequest(int from, int to){
-        //CHANGE URL WHEN IMPLEMENTED ON SERVER
-        String url = "https://ubiq.azurewebsites.net/api/Sala/Users?SalaId=" + queueId;
-
-        RequestQueue queue = Volley.newRequestQueue(this);
-
-        // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.PUT, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Track track = queueTracks.get(from);
-                        queueTracks.remove(from);
-                        queueTracks.add(to, track);
-                        queueFragment.resetAdapter();
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                System.out.println(error.toString());
-            }
-        })
-        {
-            @Override
-            public Map getHeaders() throws AuthFailureError {
-                HashMap headers = new HashMap();
-                headers.put("Authorization", "Bearer " + apiToken);
-                return headers;
-            }
-        };
-        //Add the request to the RequestQueue.
-        queue.add(stringRequest);
-    }*/
 
     public void sendGetUsersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Lista?SalaId=" + queueId;
