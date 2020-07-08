@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+//Fragmento que mostra as top musicas e os albuns de um artista.
+
 public class ArtistFragment extends Fragment {
 
     private Artist artist;
@@ -86,6 +88,8 @@ public class ArtistFragment extends Fragment {
         ListUtils.setDynamicHeight(topTracksListView);
     }
 
+    //Método que inicia o Fragment de um álbum depois de obter da API do spotify
+    //a informação necessária sobre o album
     public void getAlbumInfoAndStartFragment(MusicAlbum album, String img){
         String url = "https://api.spotify.com/v1/albums/" + album.getSpotifyId() + "/tracks";
         RequestQueue queue = Volley.newRequestQueue(getActivity());
@@ -130,7 +134,7 @@ public class ArtistFragment extends Fragment {
         queue.add(stringRequest);
     }
 
-
+    //Adaptador para criar uma ListView com os top tracks de um artista.
     class TrackListAdapter extends ArrayAdapter<Track> {
 
         Context context;
@@ -167,6 +171,7 @@ public class ArtistFragment extends Fragment {
         }
     }
 
+    //Adaptador para criar uma ListView com a lista de albuns de um artista.
     class AlbumListAdapter extends ArrayAdapter<MusicAlbum> {
 
         Context context;

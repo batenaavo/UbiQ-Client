@@ -8,6 +8,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
+
 public class Artist extends SearchResult{
     private ArrayList<String> genres;
     private ArrayList<MusicAlbum> albums;

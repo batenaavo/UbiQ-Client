@@ -3,6 +3,8 @@ package com.example.ubiq;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+//Gestor de Preferências, coloca e obtém dados de sessão da cache
+
 public class PrefManager {
     SharedPreferences pref;
     SharedPreferences.Editor editor;

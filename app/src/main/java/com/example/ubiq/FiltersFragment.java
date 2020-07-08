@@ -42,6 +42,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+//Fragmento da MainActivity onde se pode consultar a lista de filtros de género da queue,
+//tal como adicionar e remover filtros.
+
 public class FiltersFragment extends Fragment {
     private TabLayout tabLayout;
     ListView filtersListView;
@@ -169,6 +172,7 @@ public class FiltersFragment extends Fragment {
 
     }
 
+    //Envia pedido ao servidor para atualizar a lista de filtros da queue
     private void sendPostFiltersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Filtros/Alterar?SalaId=" + queueId;
         String requestBody;
@@ -240,6 +244,7 @@ public class FiltersFragment extends Fragment {
         }
     }
 
+    //Envia pedido ao servidor para remover todos os filtros da queue
     private void sendDeleteFiltersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Filtros/Alterar?SalaId=" + queueId;
         String requestBody;
@@ -306,6 +311,7 @@ public class FiltersFragment extends Fragment {
         }
     }
 
+    //Envia pedido ao servidor para obter a lista de filtros da queue
     private void sendGetFiltersRequest(){
         filtersListView.setVisibility(View.GONE);
         getView().findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
@@ -356,6 +362,7 @@ public class FiltersFragment extends Fragment {
         queue.add(stringRequest);
     }
 
+    //Envia pedido ao servidor para obter os filtros da BD de filtros correspondentes à pesquisa submetida
     private void sendGetFiltersByNameRequest(String name){
         filtersListView.setVisibility(View.GONE);
         emptyText.setVisibility(View.GONE);
@@ -410,7 +417,7 @@ public class FiltersFragment extends Fragment {
         queue.add(stringRequest);
     }
 
-
+    //Adaptador que cria uma ListView a partir de uma lista de filtros
     class FiltersAdapter extends ArrayAdapter<String> {
         Context context;
         ArrayList<String> filters;
@@ -440,6 +447,7 @@ public class FiltersFragment extends Fragment {
         }
     }
 
+    //Adaptador que cria uma ListView de filtros com botão de adicionar a partir de uma lista de filtros
     class AddFiltersAdapter extends ArrayAdapter<String> {
         Context context;
         ArrayList<String> addFilters;

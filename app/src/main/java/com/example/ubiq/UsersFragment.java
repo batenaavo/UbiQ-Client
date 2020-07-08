@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+//Fragmento da MainActivity onde se encontra a lista de utilizadores conectados à queue
+
 public class UsersFragment extends Fragment {
     ListView usersListView;
     int queueId;
@@ -110,6 +112,7 @@ public class UsersFragment extends Fragment {
         confirmBanForm.show();
     }
 
+    //pedido para banir utilizador
     private void sendBanUserRequest(String user){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Banir";
         String requestBody;
@@ -181,6 +184,7 @@ public class UsersFragment extends Fragment {
     }
 
 
+    //Adaptador da ListView de utilizadores conectados à queue
     class UserAdapter extends ArrayAdapter<String> {
 
         Context context;

@@ -66,7 +66,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.lang.Thread.sleep;
+
+//Activity principal onde decorre toda a funcionalidade das queues
+//desde que se entra numa queue até voltar a sair a funcionalidade da aplicação decorre nesta Activity
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -144,12 +147,17 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         setTitle(getQueueName());
 
+        //conexão ao servidor SignalR em localhost através do endereço passado
         hubConnection = HubConnectionBuilder.create("http://192.168.1.69:5000/updatehub")
                 .withTransport(TransportEnum.LONG_POLLING)
                 .build();
 
         if(hubConnection.getConnectionState() == HubConnectionState.DISCONNECTED)
             hubConnection.start();
+
+
+        //---------------Métodos que lidam com sinais SignalR--------------------------------
+
 
         hubConnection.on("ReceiveNewUserList", new Action() {
             @Override
@@ -207,10 +215,14 @@ public class MainActivity extends AppCompatActivity {
         }, String.class);
 
 
+        //--------------------------------------------------------------
+
+
+        //Atualizar token do Spotify após 3500 segundos
         if(System.currentTimeMillis() - preferences.getSpotifyTokenTime() >= 3500000)
             authenticateSpotifyClient();
 
-
+        //Inicar atividade num QueueFragment
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, queueFragment).commit();
         }
@@ -235,13 +247,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         System.out.println("Queue: " + queueId + " User: " + apiToken + "-----------");
+
+        //Obter a queue
         sendGetQueueRequest();
+        //Obter a lista de utilizadores
         sendGetUsersRequest();
+        //Esperar que o cliente acabe de se conectar ao SignalR
         while(hubConnection.getConnectionState() == HubConnectionState.DISCONNECTED);
+        //Enviar alerta de atualização da lista de utilizadores
         sendUpdateUsers();
     }
 
-
+    //Atribuir fragmentos às opções do menu de navegação
     private BottomNavigationView.OnNavigationItemSelectedListener navListener =
             new BottomNavigationView.OnNavigationItemSelectedListener() {
                 @Override
@@ -265,6 +282,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
 
+    //No caso do utilizador ser um guest, criar menu na barra superior
+    //com opções de sair da queue e ver os filtros
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         if(userType.equals("guest")) {
@@ -274,6 +293,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    //Atribuir opções ao menu
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
@@ -332,6 +352,7 @@ public class MainActivity extends AppCompatActivity {
         isPlaying = true;
     }
 
+    //cancela os pedidos pendentes de todos os fragmentos, usado quando se muda de fragmento
     public void cancelPendingRequests(){
         queueFragment.cancelRequests();
         searchFragment.cancelRequests();
@@ -340,6 +361,7 @@ public class MainActivity extends AppCompatActivity {
         usersFragment.cancelRequests();
     }
 
+    //alterar a visibilidade do controlador/visualizador de reprodução
     public void setPlaybackVisibility(Boolean visible){
         if(visible && !isPlayVisible && userType.equals("host")){
             findViewById(R.id.playback_controller).setVisibility(View.VISIBLE);
@@ -411,6 +433,7 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment).addToBackStack("last").commit();
     }
 
+    //obtém o token necessário para utizar a App do Spotify remotament, tal como a API
     public void authenticateSpotifyClient(){
         AuthenticationRequest.Builder builder =
                 new AuthenticationRequest.Builder(preferences.getSpotifyClientId(), AuthenticationResponse.Type.TOKEN, preferences.getSpotifyRedirectUri());
@@ -421,6 +444,7 @@ public class MainActivity extends AppCompatActivity {
         AuthenticationClient.openLoginActivity(this, preferences.getRequestCode(), request);
     }
 
+    //resultado da chamada do método authenticateSpotifyClient()
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
@@ -492,6 +516,9 @@ public class MainActivity extends AppCompatActivity {
         return str;
     }
 
+    //Atualiza a faixa a ser reproduzida atualmente
+    //inicia playback da faixa se o mode = 1
+    //avisa o SignalR de atualização da faixa atual se o utilizador for host
     public void loadTrack(int position, int mode){
         if(position >= queueFragment.queueTracks.size()){
             position = 0;
@@ -609,6 +636,8 @@ public class MainActivity extends AppCompatActivity {
         filtersForm.show();
     }
 
+    //obtém do servidor a lista de musicas da queue
+    //se tiver sucesso atualiza o fragmento e pede ao servidor a faixa atual
     public void sendGetQueueRequest() {
         String url = "https://ubiq.azurewebsites.net/api/Sala/Musicas/Lista?SalaId=" + queueId;
 
@@ -658,6 +687,8 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //envia ao serivdor pedido para adicionar uma faixa à queue
+    //no caso de sucesso avisa o SignalR de atualização à queue
     public void sendPostTrackRequest(Track track) {
         String url = "https://ubiq.azurewebsites.net/api/Sala/Musicas/Adicionar?SalaId=" + queueId;
         String requestBody;
@@ -735,6 +766,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Pedido para remover o utilizador da queue
+    //No caso de sucesso avisa SignalR de atualizações na lista de utilizadores e
+    //remove a conexão do grupo de signalR
     private void sendQuitQueueRequest(){
        String url = "https://ubiq.azurewebsites.net/api/Sala/Sair?SalaId=" + this.queueId;
 
@@ -783,12 +817,12 @@ public class MainActivity extends AppCompatActivity {
               queue.add(stringRequest);
     }
 
+    //Pede ao servidor a lista de utilizadores e atualiza o fragmento
     public void sendGetUsersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Lista?SalaId=" + queueId;
 
         RequestQueue queue = Volley.newRequestQueue(this);
 
-        // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -834,6 +868,8 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //pede ao servidor a posição da faixa atual
+    //se tiver sucesso atualiza a faixa atual
     public void sendGetCurrentTrackRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Musicas/MusicaAtual?SalaId=" + queueId;
 
@@ -881,6 +917,7 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //Envia ao servidor pedido para atualizar a posição da faixa atual
     public void sendPostCurrentTrackRequest(int pos){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Musicas/MusicaAtual?SalaId=" + queueId +
                 "&Posicao=" + (pos + 1);
@@ -929,6 +966,8 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //Envia ao servidor pedido para obter a lista de filtros da queue
+    //se tiver sucesso mostra um pop-up com os filtros da queue
     private void sendGetFiltersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Filtros/Lista?SalaId=" + queueId;
 
@@ -973,12 +1012,14 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //Envia ao SignalR atualização da lista de utilizadores
     public void sendUpdateUsers(){
         if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED){
             hubConnection.send("UpdateUserList", queueName);
         }
     }
-                                                            
+
+    //Elimina uma faixa da queue e avisa o SignalR que a queue foi alterada
     public void removeTrackFromQueue(int position){
         queueFragment.queueTracks.remove(position);
         if(position == queueFragment.currentTrack){
@@ -997,6 +1038,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //Elimina a queue e avisa o SignalR
+    //Acaba esta Activity e passa para a HomeActivity
     public void deleteQueue(){
         preferences.setQueueId(0);
         if(hubConnection.getConnectionState() == HubConnectionState.CONNECTED)
@@ -1006,6 +1049,7 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
+    //Adaptador para a ListView de filtros da queue
     class FiltersAdapter extends ArrayAdapter<String> {
         Context context;
         ArrayList<String> filters;

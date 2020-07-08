@@ -44,6 +44,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+//Fragmento da MainActivity onde se podem alterar as definições da queue.
+// Exclusivo para hosts.
+
 public class SettingsFragment extends Fragment {
 
     ListView settingsListView;
@@ -116,6 +119,7 @@ public class SettingsFragment extends Fragment {
         deleteQueueForm.show();
     }
 
+    //Abre um pop-up com a lista de uitlizadores banidos com opção de os readmitir
     public void showBannedUsersDialog(View v) {
         Dialog bannedUsersForm = new Dialog(getActivity());
         bannedUsersForm.setContentView(R.layout.form_simple_list);
@@ -128,6 +132,7 @@ public class SettingsFragment extends Fragment {
         bannedUsersForm.show();
     }
 
+    //Pedido para obter lista de utilizadores banidos da queue
     private void sendGetBannedUsersRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Banidos?SalaId=" + queueId;
 
@@ -175,6 +180,7 @@ public class SettingsFragment extends Fragment {
         queue.add(stringRequest);
     }
 
+    //Pedido para mudar o nome da queue
     private void sendChangeQueueNameRequest(String newName){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Nome/Alterar";
         String requestBody;
@@ -245,6 +251,7 @@ public class SettingsFragment extends Fragment {
         }
     }
 
+    //pedido para mudar a password da queue
     private void sendChangeQueuePwdRequest(String newPwd){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Password/Alterar";
         String requestBody;
@@ -314,6 +321,7 @@ public class SettingsFragment extends Fragment {
         }
     }
 
+    //pedido para eliminar uma queue
     private void sendDeleteQueueRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Eliminar?SalaId=" + this.queueId;
 
@@ -360,6 +368,7 @@ public class SettingsFragment extends Fragment {
         queue.add(stringRequest);
     }
 
+    //pedido para readmitir um utilizador banido
    private void sendReadmitUserRequest(String user, ImageButton add, ImageView check){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Utilizadores/Readmitir";
         String requestBody;
@@ -427,6 +436,7 @@ public class SettingsFragment extends Fragment {
         }
     }
 
+    //Adaptador da ListView das opções das definições
     class SettingsAdapter extends ArrayAdapter<String> {
 
         Context context;
@@ -525,6 +535,7 @@ public class SettingsFragment extends Fragment {
         }
     }
 
+    //Adaptador da ListView de utilizadores banidos
     class BannedUsersAdapter extends ArrayAdapter<String> {
         Context context;
         ArrayList<String> users;

@@ -6,6 +6,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
+
 public class MusicAlbum extends SearchResult{
     private int year;
     private String artist;

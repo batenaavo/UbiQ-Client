@@ -56,6 +56,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+//Activity que corresponde à página inicial da aplicação (depois de autenticado)
+//Nesta atividade estão os métodos de obter listas de queues por proximidade e nome
+//e os métodos para entrar numa queue e criar uma nova queue
+
 public class HomeActivity extends AppCompatActivity {
 
     private PrefManager preferences;
@@ -222,19 +226,23 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    //Método que lida com pedidos de permissoes, neste caso de localização
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case 10:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //pedido autorizado -> pedir lista de queues por proximidade
                     preferences.setLocationAccess(1);
                     emptyText.setVisibility(View.GONE);
                     getLocationAndSendRequest("get");
                 }
                 else if(!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)){
+                    //pedido negado permanentemente
                     preferences.setLocationAccess(-1);
                 }
                 else{
+                    //pedido negado
                     preferences.setLocationAccess(0);
                     emptyText.setText(R.string.gps_denied);
                     allowLocationBtn.setVisibility(View.VISIBLE);
@@ -246,6 +254,8 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    //Quando a aplicação é retomada após interrupção e a permissão de localização foi entretanto garantida
+    //exteriormente à aplicação, efetuar pedido de queues por proximidade
     @Override
     public void onResume(){
         super.onResume();
@@ -258,6 +268,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    //abrir os settings da app para mudar permissão de localização exteriormente
     public void openAppSettings() {
         Uri packageUri = Uri.fromParts( "package", getApplicationContext().getPackageName(), null );
 
@@ -270,6 +281,7 @@ public class HomeActivity extends AppCompatActivity {
         getApplicationContext().startActivity( applicationDetailsSettingsIntent );
 
     }
+
 
     public void showCreateQueueDialog(View v) {
         Dialog newQueueForm = new Dialog(this);
@@ -382,20 +394,7 @@ public class HomeActivity extends AppCompatActivity {
         return queueNames;
     }
 
-    private ArrayList<String> decodeResult(String result){
-        String mid = result.substring(1, result.length() - 1);
-        ArrayList<String> list = new ArrayList<>();
-        if(mid.length()>0) {
-            ArrayList<String> tmp = new ArrayList<String>(Arrays.asList(mid.split(",")));
-            int n = tmp.size();
-            for (int i = 0; i < n; i++) {
-                String cur = tmp.get(i);
-                list.add(cur.substring(1, cur.length() - 1));
-            }
-        }
-        return list;
-    }
-
+    //pede a localização do dispositivo e envia o pedido cuja referencia é passada como argumento
     private void getLocationAndSendRequest(String req){
         mFusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
             if (location != null) {
@@ -413,6 +412,7 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
+    //pede ao servidor a lista de queues por proximidade e atualiza a ListView de queues
     private void sendGetNearQueuesRequest(double coordX, double coordY, int limit){
         emptyText.setVisibility(View.GONE);
         queuesListView.setVisibility(View.GONE);
@@ -470,6 +470,8 @@ public class HomeActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //pede ao servidor a lista de queues que correspondem ao nome passado como argumento
+    // e atualiza a ListView de queues com o resultado
     private void sendGetQueuesByNameRequest(String name){
         queuesListView.setVisibility(View.GONE);
         findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
@@ -481,7 +483,7 @@ public class HomeActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        queues = decodeResult(response);
+                        queues = new HttpResponseManager().responseToStringList(response);
                         findViewById(R.id.loading_circle).setVisibility(View.GONE);
                         if(queues.size() == 0){
                             emptyText.setText(R.string.empty_search);
@@ -525,6 +527,8 @@ public class HomeActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //pedido ao servidor para entrar numa queue
+    //se tiver sucesso passa para a MainActivity
     public void sendJoinRequest(String name, String password, String userType, Boolean loading){
         if(!loading)
             showLoadingDialog();
@@ -587,6 +591,8 @@ public class HomeActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //pedido ao servidor para criar uma nova queue com os parametros localizaçao, tempo maximo e maximo de faixas
+    //se tiver sucesso efetua um pedido ao servidor para entrar na queue
     public void sendCreateQueueRequest(String name, String password, double coordX, double coordY, int maxT, int maxH){
         showLoadingDialog();
         String url = "https://ubiq.azurewebsites.net/api/Sala/Criar";
@@ -660,6 +666,8 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    //pedido ao servidor para criar uma nova queue sem os parametros de localizaçao
+    //se tiver sucesso efetua um pedido ao servidor para entrar na queue
     public void sendCreateQueueRequest(String name, String password, int maxT, int maxH){
         showLoadingDialog();
         String url = "https://ubiq.azurewebsites.net/api/Sala/Criar";
@@ -730,6 +738,8 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    //pedido para efetuar logout
+    //se tiver sucesso elimina os dados guardados em SharedPreferences e passa para a RegisterActivity
     private void sendLogoutRequest(){
         String url = "https://ubiq.azurewebsites.net/api/Account/Logout";
 
@@ -774,6 +784,7 @@ public class HomeActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //Adaptador para a ListView que mostra as queues de uma lista de queues
     class SearchAdapter extends ArrayAdapter<String> {
         Context context;
         ArrayList<String> queues;

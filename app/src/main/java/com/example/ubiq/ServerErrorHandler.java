@@ -8,6 +8,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
+//Classe com métodos de processamento de erros de servidor para obter mensagens de erro
+
 public class ServerErrorHandler {
 
     public String getRegisterErrorString(VolleyError error){

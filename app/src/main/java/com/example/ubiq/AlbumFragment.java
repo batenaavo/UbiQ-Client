@@ -21,6 +21,8 @@ import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
+//Fragment que mostra as músicas de um album com possibilidade de as adicionar à queue.
+
 public class AlbumFragment extends Fragment{
     private MusicAlbum album;
     private ImageView albumImageView;

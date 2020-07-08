@@ -3,6 +3,8 @@ package com.example.ubiq;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
+//Classe que representa uma faixa de música
+
 public class Track extends SearchResult{
     private ArrayList<Artist> artists;
     private int duration;

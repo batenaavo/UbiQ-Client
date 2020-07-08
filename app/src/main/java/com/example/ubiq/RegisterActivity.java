@@ -31,6 +31,9 @@ import com.spotify.sdk.android.authentication.AuthenticationResponse;
 
 import org.json.JSONObject;
 
+
+//Atividade onde se efetua o registo e login.
+
 public class RegisterActivity extends AppCompatActivity {
     public static final String TAG = "TAG";
     private PrefManager preferences;
@@ -136,6 +139,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     }
 
+    //procede à autenticação por parte do Spotify
     public void authenticateSpotifyClient(){
         AuthenticationRequest.Builder builder =
                 new AuthenticationRequest.Builder(preferences.getSpotifyClientId(), AuthenticationResponse.Type.TOKEN, preferences.getSpotifyRedirectUri());
@@ -146,6 +150,7 @@ public class RegisterActivity extends AppCompatActivity {
         AuthenticationClient.openLoginActivity(this, preferences.getRequestCode(), request);
     }
 
+    //resultado da chamada do método anterior
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
@@ -179,7 +184,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
-
+    //Envia pedido de registo ao servidor e pede um token de acesso se tiver sucesso
     private void sendPostRegisterRequest(String email, String username, String password) {
         errorText.setVisibility(View.GONE);
         String url = "https://ubiq.azurewebsites.net/api/Account/Register";
@@ -230,6 +235,8 @@ public class RegisterActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    //envia pedido de token de acesso ao servidor
+    //Se tiver sucesso guarda os dados de utilizador em cache e passa para a SplashActivity
     public void sendGetTokenRequest(String username, String password) {
         errorText.setVisibility(View.GONE);
         String url = "https://ubiq.azurewebsites.net/token";

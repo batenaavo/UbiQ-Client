@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+//Fragmento da MainActivity onde se interage com a lista de reprodução
+
 public class QueueFragment extends Fragment {
     ListView queueListView;
     String apiToken;
@@ -82,6 +84,7 @@ public class QueueFragment extends Fragment {
     }
 
 
+    //Envia pedido para eliminar uma faixa da queue
     public void sendDeleteTrackRequest(int index){
         System.out.println(queueId);
         System.out.println(index);
@@ -133,6 +136,7 @@ public class QueueFragment extends Fragment {
         queue.add(stringRequest);
     }
 
+    //Adaptador para a ListView que exibe a lista de músicas
     class QueueAdapter extends ArrayAdapter<Track> {
         Context context;
         ArrayList<Track> rTracks;

@@ -27,6 +27,9 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
+//Activity inicial da App, onde os dados de sessão são obtidos e o utilizador é
+//reencaminhado para a Activity adequada
+
 public class SplashActivity extends AppCompatActivity {
 
     private PrefManager preferences;
@@ -54,13 +57,15 @@ public class SplashActivity extends AppCompatActivity {
                         System.currentTimeMillis() - preferences.getSpotifyTokenTime() > 3500000){
                     authenticateSpotifyClient();
                 } else if(preferences.getSpotifyAccountType() == null) {
-                    sendGetUserTypeRequest();
+                    sendGetSpotifyAccountTypeRequest();
                 } else {
-                    sendGetQueueIdReq();
+                    sendGetQueueInfoReq();
                 }
             }
         });
 
+        // Se o utiliador nao está autenticado é reencaminhado para a RegisterActivity
+        // Se não verifica-se e obtém-se os tokens de acesso e os dados de sessão
         if(!preferences.isLoggedIn() ||
                 apiToken == null ||
                 System.currentTimeMillis() - preferences.getAPITokenTime() > 1209599999){
@@ -70,9 +75,9 @@ public class SplashActivity extends AppCompatActivity {
                 System.currentTimeMillis() - preferences.getSpotifyTokenTime() > 3500000){
             authenticateSpotifyClient();
         } else if(preferences.getSpotifyAccountType() == null) {
-            sendGetUserTypeRequest();
+            sendGetSpotifyAccountTypeRequest();
         } else {
-            sendGetQueueIdReq();
+            sendGetQueueInfoReq();
         }
     }
 
@@ -98,7 +103,7 @@ public class SplashActivity extends AppCompatActivity {
                 case TOKEN:
                     preferences.setSpotifyAccessToken(response.getAccessToken());
                     preferences.setSpotifyTokenTime(System.currentTimeMillis());
-                    sendGetUserTypeRequest();
+                    sendGetSpotifyAccountTypeRequest();
                     break;
 
                 // Auth flow returned an error
@@ -114,7 +119,8 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
-    private void sendGetUserTypeRequest(){
+    //Pedido para obter o tipo de conta spotify to utilizador
+    private void sendGetSpotifyAccountTypeRequest(){
         String url = "https://api.spotify.com/v1/me";
 
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -128,7 +134,7 @@ public class SplashActivity extends AppCompatActivity {
                             String type = obj.getString("product");
                             preferences.setSpotifyAccountType(type);
                             System.out.println("type: " + type);
-                            sendGetQueueIdReq();
+                            sendGetQueueInfoReq();
                         } catch (Exception e){
                             e.printStackTrace();
                         }
@@ -137,7 +143,7 @@ public class SplashActivity extends AppCompatActivity {
             @Override
             public void onErrorResponse(VolleyError error) {
                 if (error instanceof TimeoutError)
-                    sendGetUserTypeRequest();
+                    sendGetSpotifyAccountTypeRequest();
                 else
                     noConnectionLayout.setVisibility(View.VISIBLE);
                 System.out.println(error.toString());
@@ -154,7 +160,8 @@ public class SplashActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-    public void sendGetQueueIdReq(){
+    //pedido apra obter a informação da queue à qual o utilizador se encontra ligado
+    public void sendGetQueueInfoReq(){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Info";
 
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -181,7 +188,7 @@ public class SplashActivity extends AppCompatActivity {
             @Override
             public void onErrorResponse(VolleyError error) {
                 if (error instanceof TimeoutError) {
-                    sendGetQueueIdReq();
+                    sendGetQueueInfoReq();
                 } else if(error instanceof NoConnectionError){
                     noConnectionLayout.setVisibility(View.VISIBLE);
                 } else if (error instanceof ServerError) {

@@ -1,5 +1,7 @@
 package com.example.ubiq;
 
+//Classe abstrata que engloba todas as formas de resultados de pesquisa: as classes Artist, MusicAlbum e Track
+
 public abstract class SearchResult {
     protected String spotifyId;
     protected String name;

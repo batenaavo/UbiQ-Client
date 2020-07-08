@@ -18,4 +18,5 @@ public class HttpResponseManager {
         }
         return list;
     }
+
 }

@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+//Fragmento da MainActivity onde se pesquisa por música e artistas
+
 public class SearchFragment extends Fragment {
     ListView resultListView;
     ImageButton searchButton;
@@ -100,6 +102,8 @@ public class SearchFragment extends Fragment {
         resultListView.setAdapter(adapter);
     }
 
+
+    //Envia pedido de pesquisa à API do Spotify
     public void sendSearchRequest(String accessToken, String input){
         getView().findViewById(R.id.empty_search).setVisibility(View.GONE);
         getActivity().findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
@@ -162,6 +166,8 @@ public class SearchFragment extends Fragment {
         return query;
     }
 
+    //Filtra os resultados da pesquisa por género e ordena a lista por popularidade de resultados
+    //Mostra os resultados ao utilizador
     private void filterResultsAndDisplayList(ArrayList<SearchResult> results){
         String url = "https://ubiq.azurewebsites.net/api/Sala/Filtros/Lista?SalaId=" + queueId;
 
@@ -252,6 +258,7 @@ public class SearchFragment extends Fragment {
         return ans;
     }
 
+    //Adiciona os resultados do tipo "Artist" à lista de resultados
     private void getResultArtists(String result, ArrayList<SearchResult> results) throws JSONException {
         JSONObject obj = new JSONObject(result);
         if(obj.has("artists") && !obj.isNull("artists")) {
@@ -279,7 +286,6 @@ public class SearchFragment extends Fragment {
         }
     }
 
-
     public void getTracksInfo(int index, JSONArray items, ArrayList<SearchResult> results) throws  JSONException{
         if(index < items.length()) {
             final JSONObject item = items.getJSONObject(index);
@@ -300,6 +306,7 @@ public class SearchFragment extends Fragment {
             filterResultsAndDisplayList(results);
     }
 
+    //Adiciona lista de artistas à faixa
     public void addArtistsToTrack(int indexA, int indexT, Track track, JSONArray items, JSONArray artists, ArrayList<SearchResult> results) throws JSONException{
         if(indexA < artists.length()) {
             String url = "https://api.spotify.com/v1/artists/" + artists.getJSONObject(indexA).getString("id");
@@ -347,9 +354,6 @@ public class SearchFragment extends Fragment {
                     System.out.println(error.toString());
                 }
             }) {
-                /**
-                 * Passing some request headers*
-                 */
                 @Override
                 public Map getHeaders() throws AuthFailureError {
                     HashMap headers = new HashMap();
@@ -357,7 +361,6 @@ public class SearchFragment extends Fragment {
                     return headers;
                 }
             };
-            // Add the request to the RequestQueue.
             queue.add(stringRequest);
         }
         else{
@@ -366,6 +369,7 @@ public class SearchFragment extends Fragment {
         }
     }
 
+    //Processa o resultado da pesquisa
     private void processResponse(String response) {
         ArrayList<SearchResult> results = new ArrayList<>();
         try {
@@ -379,7 +383,8 @@ public class SearchFragment extends Fragment {
         }catch (JSONException e){e.printStackTrace();}
     }
 
-
+    //Pede informação sobre um artista e envia pedido para
+    //obter informação sobre os albuns e faixas desse artista e iniciar um ArtistFragment desse artista
     public void getArtistInfoAndStartFragment(Artist artist){
         String url = "https://api.spotify.com/v1/artists/" + artist.getSpotifyId() + "/albums";
         RequestQueue queue = Volley.newRequestQueue(getActivity());
@@ -427,6 +432,8 @@ public class SearchFragment extends Fragment {
         queue.add(stringRequest);
     }
 
+    //Pede informação sobre as faixas e albuns de um artista
+    //Se tiver sucesso inicia um ArtistFragment do artista
     public void getArtistTopTracksAndStartFragment(Artist artist){
         String url = "https://api.spotify.com/v1/artists/" + artist.getSpotifyId() + "/top-tracks?country=PT";
         RequestQueue queue = Volley.newRequestQueue(getActivity());
@@ -473,7 +480,7 @@ public class SearchFragment extends Fragment {
         queue.add(stringRequest);
     }
 
-
+    //Adaptador para a ListView que mostra a lista de resultados da pesquisa
     class SearchAdapter extends ArrayAdapter<SearchResult> {
 
         Context context;
