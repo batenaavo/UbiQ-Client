@@ -414,6 +414,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void sendGetNearQueuesRequest(double coordX, double coordY, int limit){
+        emptyText.setVisibility(View.GONE);
         queuesListView.setVisibility(View.GONE);
         findViewById(R.id.loading_circle).setVisibility(View.VISIBLE);
         String url = "https://ubiq.azurewebsites.net/api/Sala/Procurar/Localizacao/?Xcoord="

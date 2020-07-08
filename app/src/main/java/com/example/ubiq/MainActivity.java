@@ -237,7 +237,6 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("Queue: " + queueId + " User: " + apiToken + "-----------");
         sendGetQueueRequest();
         sendGetUsersRequest();
-        sendGetCurrentTrackRequest();
         while(hubConnection.getConnectionState() == HubConnectionState.DISCONNECTED);
         sendUpdateUsers();
     }
@@ -592,7 +591,7 @@ public class MainActivity extends AppCompatActivity {
     public void showfiltersDialog(ArrayList<String> filters){
         Dialog filtersForm = new Dialog(this);
         filtersForm.setContentView(R.layout.form_simple_list);
-        ListView bannedUsersListView = filtersForm.findViewById(R.id.list_view);
+        ListView filtersListView = filtersForm.findViewById(R.id.list_view);
         TextView title = filtersForm.findViewById(R.id.title);
         TextView empty = filtersForm.findViewById(R.id.empty_text);
         title.setText("Allowed Genres");
@@ -603,7 +602,7 @@ public class MainActivity extends AppCompatActivity {
         }
         else {
             FiltersAdapter adapter = new FiltersAdapter(getApplicationContext(), filters);
-            bannedUsersListView.setAdapter(adapter);
+            filtersListView.setAdapter(adapter);
         }
 
         filtersForm.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -625,6 +624,7 @@ public class MainActivity extends AppCompatActivity {
                                 setPlaybackVisibility(false);
                             if(selectedFragment == queueFragment)
                                 queueFragment.resetAdapter();
+                        sendGetCurrentTrackRequest();
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -845,7 +845,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         int pos = Integer.parseInt(response);
-                        System.out.println("current: " + pos);
+                        System.out.println("Current Track: " + (pos - 1));
                         loadTrack(pos - 1, 0);
                     }
                 }, new Response.ErrorListener() {

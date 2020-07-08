@@ -6,7 +6,7 @@
     <string name="rock">Rock</string>
     <string name="quit_queue">Quit Queue</string>
     <string name="delete_confirm">Are you sure you want to delete this queue?</string>
-    <string name="register_text">New Here ?  Create Account</string>
+    <string name="register_text">New Here? Create an Account</string>
     <string name="login_text">Already Registered ? Login Here</string>
     <string name="empty_search">No matches for your search!</string>
     <string name="gps_denied">We need your permission to find queues near you!</string>
