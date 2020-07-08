@@ -6,7 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -40,8 +43,8 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText mEmail, mPassword, mConfirmPassword, mUsername;
     private Button mSubmitButton;
     private TextView changeActionButton, errorText;
-    private ProgressBar progressBar;
     private String action = "register";
+    private Dialog loadingDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +58,7 @@ public class RegisterActivity extends AppCompatActivity {
         mSubmitButton = findViewById(R.id.submit_button);
         changeActionButton = findViewById(R.id.createText);
         errorText = findViewById(R.id.error_text);
-        progressBar = findViewById(R.id.progressBar);
+        this.loadingDialog = new Dialog(this);
 
         //login automático se o user já estiver registado
         if (preferences.isLoggedIn()) {
@@ -109,7 +112,7 @@ public class RegisterActivity extends AppCompatActivity {
                     errorText.setVisibility(View.VISIBLE);
                     return;
                 }
-                progressBar.setVisibility(View.VISIBLE);
+                showLoadingDialog();
                 if(action.equals("register"))
                     sendPostRegisterRequest(email, username, password);
                 else sendGetTokenRequest(username, password);
@@ -137,6 +140,12 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    public void showLoadingDialog(){
+        loadingDialog.setContentView(R.layout.loading_popup);
+        loadingDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        loadingDialog.show();
     }
 
     //procede à autenticação por parte do Spotify
@@ -169,14 +178,14 @@ public class RegisterActivity extends AppCompatActivity {
 
                 // Auth flow returned an error
                 case ERROR:
-                    progressBar.setVisibility(View.GONE);
+                    loadingDialog.dismiss();
                     errorText.setVisibility(View.VISIBLE);
                     errorText.setText(R.string.spotify_auth_error);
                     System.out.println("error: " + response.toString());
                     break;
                 // Most likely auth flow was cancelled
                 default:
-                    progressBar.setVisibility(View.GONE);
+                    loadingDialog.dismiss();
                     errorText.setVisibility(View.VISIBLE);
                     errorText.setText(R.string.spotify_auth_error);
                     System.out.println(response.toString());
@@ -214,7 +223,7 @@ public class RegisterActivity extends AppCompatActivity {
                     errorText.setText(new ServerErrorHandler().getErrorArray(error).get(0));
                     errorText.setVisibility(View.VISIBLE);
                 }
-                progressBar.setVisibility(View.GONE);
+                loadingDialog.dismiss();
             }
         }) {
             @Override
@@ -278,7 +287,7 @@ public class RegisterActivity extends AppCompatActivity {
                     errorText.setText(new ServerErrorHandler().getRegisterErrorString(error));
                     errorText.setVisibility(View.VISIBLE);
                 }
-                progressBar.setVisibility(View.GONE);
+                loadingDialog.dismiss();
             }
         }) {
             @Override

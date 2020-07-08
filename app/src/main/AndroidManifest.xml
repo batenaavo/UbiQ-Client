@@ -15,19 +15,20 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".SplashActivity">
+        <activity android:name=".SplashActivity" android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".HomeActivity" />
-        <activity android:name=".RegisterActivity"/>
-        <activity android:name=".MainActivity" />
+        <activity android:name=".HomeActivity" android:configChanges="orientation|screenSize|keyboardHidden"/>
+        <activity android:name=".RegisterActivity" android:configChanges="orientation|screenSize|keyboardHidden"/>
+        <activity android:name=".MainActivity" android:configChanges="orientation|screenSize|keyboardHidden"/>
         <activity
             android:name="com.spotify.sdk.android.authentication.LoginActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:configChanges="orientation|screenSize|keyboardHidden"/>
     </application>
 
 </manifest>
